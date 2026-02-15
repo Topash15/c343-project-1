@@ -1,3 +1,5 @@
+//Name: Alexander Topash
+
 import java.util.Scanner;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -40,10 +42,7 @@ public class Project1 {
         Stack<String> outputStack = new Stack<String>();
         String PostFix = "";
 
-        // your code goes here:
         File f = new File(inputfile);
-        int line = 0;
-        char lastChar = ' ';
 
         try (Scanner input = new Scanner(f)) {
 
@@ -51,10 +50,9 @@ public class Project1 {
 
                 while (input.hasNextLine()) {
                     String nextLine = input.nextLine();
-                    line++;
+
                     for (int i = 0; i < nextLine.length(); i++) {
                         char nextChar = nextLine.charAt(i);
-                        lastChar = nextChar;
                         String token = "";
 
                         // combines characters back into strings separated by spaces
@@ -63,7 +61,7 @@ public class Project1 {
                             nextChar = nextLine.charAt(++i);
                         }
 
-                        if(nextChar != ' ' && token.equals("")){
+                        if (nextChar != ' ' && token.equals("")) {
                             token += nextChar;
                         }
 
@@ -72,6 +70,7 @@ public class Project1 {
                             continue;
                         }
 
+                        // if token is a number, add to postfix string
                         boolean isNumber = false;
                         try {
                             Float tokenFloat = Float.parseFloat(token);
@@ -79,15 +78,15 @@ public class Project1 {
                         } catch (NumberFormatException e) {
                             isNumber = false;
                         }
-
-                        // if token is a number, add to postfix string
                         if (isNumber == true) {
                             PostFix += token + " ";
                         }
+
                         // if token is "(", push to stack
                         else if (token.equals("(")) {
                             outputStack.push(token);
                         }
+
                         // if token is ")", pop stack and add to string until topstack is "(".
                         // pop "(" out of stack
                         else if (token.equals(")")) {
@@ -96,7 +95,9 @@ public class Project1 {
                                 PostFix += PostFixToken + " ";
                                 PostFixToken = outputStack.pop();
                             }
-                        } else {
+                        }
+                        // handles operators
+                        else {
                             // if stack is empty, add token to stack
                             if (outputStack.empty()) {
                                 outputStack.push(token);
@@ -106,27 +107,40 @@ public class Project1 {
                             // if stack is not empty and top stack is not "("
                             String topStack = outputStack.peek();
                             if (!topStack.equals("(")) {
-                                // if topStack has higher or equal precedence over scanned token, pop the stack
-                                // and add to the postfix string
+                                // if topStack has higher or equal precedence over scanned token, 
+                                // pop the stack and add to the postfix string
                                 // repeat process until topstack is "(" or has lower precedence
                                 if (token.equals("+") || token.equals("-")) {
+
+                                    // everything has higher or equal precedence for + and - so empty stack
                                     while (!outputStack.empty()) {
                                         topStack = outputStack.peek();
-                                        if(topStack.equals("(")){break;}
+
+                                        if (topStack.equals("(")) {
+                                            break;
+                                        }
+
                                         PostFix += outputStack.pop() + " ";
                                     }
 
                                 } else if (token.equals("*") || token.equals("/")) {
+
+                                    // * and / take precedence over + and -
                                     while (!outputStack.empty() &&
                                             (!topStack.equals("+") &&
-                                             !topStack.equals("-"))
-                                          ) {
+                                             !topStack.equals("-"))) {
                                         topStack = outputStack.peek();
-                                        if(topStack.equals("(")){break;}
+
+                                        if (topStack.equals("(")) {
+                                            break;
+                                        }
+
                                         PostFix += outputStack.pop() + " ";
                                     }
                                 }
                             }
+                            
+                            // once operators within parenthesis are handled, push current operator to stack
                             outputStack.push(token);
                         }
 
@@ -135,9 +149,8 @@ public class Project1 {
                     // clear stack at the end of the line
                     while (!outputStack.empty()) {
                         String operator = outputStack.pop();
-                        if (!operator.equals("(")) {
-                            PostFix += operator + " ";
-                        }
+
+                        PostFix += operator + " ";
                     }
 
                     output.write(PostFix);
@@ -145,13 +158,9 @@ public class Project1 {
                         output.write("\n");
                     }
                     PostFix = "";
-                    // read infix expression from inputfile
-                    // convert it to to postix expression
-                    // save the postfix expression to outputfile
-
                 }
             } catch (Exception e) {
-                System.out.println(e + "at line:" + line + ". Last character:" + lastChar);
+                System.out.println(e);
             }
 
         } catch (
@@ -163,9 +172,83 @@ public class Project1 {
     }
 
     public static void evaluateExp(String inputfile) {
-        // your code goes here:
-        // read postfix expression from inputfile
-        // evalue the the postix expression
-        // display the result on screen
+
+        File f = new File(inputfile);
+        Stack<Float> evaluateStack = new Stack<Float>();
+
+        try (Scanner input = new Scanner(f)) {
+
+            while (input.hasNextLine()) {
+                String nextLine = input.nextLine();
+
+                for (int i = 0; i < nextLine.length(); i++) {
+                    char nextChar = nextLine.charAt(i);
+                    String token = "";
+
+                    // combines characters back into strings separated by spaces
+                    while (!Character.isWhitespace(nextChar) && i < nextLine.length() - 1) {
+                        token += nextChar;
+                        nextChar = nextLine.charAt(++i);
+                    }
+
+                    if (nextChar != ' ' && token.equals("")) {
+                        token += nextChar;
+                    }
+
+                    // if token is empty space, skip to next iteration
+                    if (token == "") {
+                        continue;
+                    }
+
+                    boolean isNumber = false;
+                    try {
+                        Float tokenFloat = Float.parseFloat(token);
+                        isNumber = true;
+                    } catch (NumberFormatException e) {
+                        isNumber = false;
+                    }
+
+                    // if number, push to stack
+                    if (isNumber == true) {
+                        evaluateStack.push(Float.parseFloat(token));
+                    }
+                    // if operator,
+                    else {
+                        // error if less than two numbers in stack
+                        if (evaluateStack.size() < 2) {
+                            throw new Exception("Not enough numbers in stack to apply operator.");
+                        }
+                        // else apply operator to first and second numbers in stack
+                        float num1 = evaluateStack.pop();
+                        float num2 = evaluateStack.pop();
+
+                        switch (token) {
+                            case "+":
+                                evaluateStack.push(num2 + num1);
+                                break;
+                            case "-":
+                                evaluateStack.push(num2 - num1);
+                                break;
+                            case "*":
+                                evaluateStack.push(num2 * num1);
+                                break;
+                            case "/":
+                                evaluateStack.push(num2 / num1);
+                                break;
+                        }
+                    }
+                }
+                // if 0 or more than 1 numbers in stack, error
+                if (evaluateStack.size() != 1) {
+                    throw new Exception("Operator and Number mismatch. Calculation incomplete.");
+                }
+                // else result = stack.pop
+                else {
+                    System.out.println(evaluateStack.pop());
+                }
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+        }
     }
 }
