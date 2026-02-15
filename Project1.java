@@ -1,4 +1,5 @@
 import java.util.Scanner;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Stack;
@@ -41,25 +42,33 @@ public class Project1 {
 
         // your code goes here:
         File f = new File(inputfile);
+        int line = 0;
+        char lastChar = ' ';
 
         try (Scanner input = new Scanner(f)) {
 
-            try (FileWriter output = new FileWriter(outputfile, false)) {
+            try (BufferedWriter output = new BufferedWriter(new FileWriter(outputfile, false))) {
 
-                while (input.hasNext()) {
+                while (input.hasNextLine()) {
                     String nextLine = input.nextLine();
+                    line++;
                     for (int i = 0; i < nextLine.length(); i++) {
                         char nextChar = nextLine.charAt(i);
+                        lastChar = nextChar;
                         String token = "";
 
                         // combines characters back into strings separated by spaces
-                        while (!Character.isWhitespace(nextChar)) {
+                        while (!Character.isWhitespace(nextChar) && i < nextLine.length() - 1) {
                             token += nextChar;
                             nextChar = nextLine.charAt(++i);
                         }
 
+                        if(nextChar != ' ' && token.equals("")){
+                            token += nextChar;
+                        }
+
                         // if token is empty space, skip to next iteration
-                        if(token == ""){
+                        if (token == "") {
                             continue;
                         }
 
@@ -73,8 +82,7 @@ public class Project1 {
 
                         // if token is a number, add to postfix string
                         if (isNumber == true) {
-                            PostFix += token;
-                            PostFix += " ";
+                            PostFix += token + " ";
                         }
                         // if token is "(", push to stack
                         else if (token.equals("(")) {
@@ -85,8 +93,7 @@ public class Project1 {
                         else if (token.equals(")")) {
                             String PostFixToken = outputStack.pop();
                             while (!PostFixToken.equals("(")) {
-                                PostFix += PostFixToken;
-                                PostFix += " ";
+                                PostFix += PostFixToken + " ";
                                 PostFixToken = outputStack.pop();
                             }
                         } else {
@@ -104,57 +111,47 @@ public class Project1 {
                                 // repeat process until topstack is "(" or has lower precedence
                                 if (token.equals("+") || token.equals("-")) {
                                     while (!outputStack.empty()) {
-                                        if (topStack.equals("(") ||
-                                            topStack.equals("+") ||
-                                            topStack.equals("-")) {
+                                        topStack = outputStack.peek();
+                                        if(topStack.equals("(")){break;}
+                                        PostFix += outputStack.pop() + " ";
+                                    }
 
-                                            PostFix += topStack;
-                                            PostFix += " ";
-                                            System.out.println(outputStack.empty());
-                                            topStack = outputStack.pop();
-                                        }
-                                        break;
+                                } else if (token.equals("*") || token.equals("/")) {
+                                    while (!outputStack.empty() &&
+                                            (!topStack.equals("+") &&
+                                             !topStack.equals("-"))
+                                          ) {
+                                        topStack = outputStack.peek();
+                                        if(topStack.equals("(")){break;}
+                                        PostFix += outputStack.pop() + " ";
                                     }
                                 }
-                                if (token.equals("*") || token.equals("/")) {
-                                    while (!outputStack.empty()) {
-                                        if (topStack.equals("(") ||
-                                                topStack.equals("*") ||
-                                                topStack.equals("/")) {
-                                            topStack = outputStack.pop();
-
-                                            PostFix += topStack;
-                                            PostFix += " ";
-
-                                            topStack = outputStack.pop();
-                                        }
-
-                                    }
-                                }
-                                outputStack.push(token);
-                            } else {
-                                outputStack.push(token);
                             }
+                            outputStack.push(token);
                         }
 
                     }
 
                     // clear stack at the end of the line
                     while (!outputStack.empty()) {
-                        PostFix += outputStack.pop();
-                        PostFix += " ";
+                        String operator = outputStack.pop();
+                        if (!operator.equals("(")) {
+                            PostFix += operator + " ";
+                        }
                     }
 
                     output.write(PostFix);
+                    if (input.hasNextLine()) {
+                        output.write("\n");
+                    }
                     PostFix = "";
-                    nextLine = input.nextLine();
                     // read infix expression from inputfile
                     // convert it to to postix expression
                     // save the postfix expression to outputfile
 
                 }
             } catch (Exception e) {
-                System.out.println(e);
+                System.out.println(e + "at line:" + line + ". Last character:" + lastChar);
             }
 
         } catch (
